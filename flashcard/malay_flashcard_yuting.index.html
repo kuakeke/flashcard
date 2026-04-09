@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>馬來文新手情境單字卡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #030712; /* Tailwind gray-950 黑底 */
+        }
+
+        /* 3D 翻轉卡片核心 CSS */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        
+        .card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        
+        .card-inner.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* 隱藏滾動條但保留功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- 主容器 -->
+    <div class="w-full max-w-md bg-gray-900 rounded-3xl shadow-2xl shadow-yellow-900/20 border border-yellow-700/30 overflow-hidden flex flex-col h-[85vh] max-h-[800px]">
+        
+        <!-- 頭部：標題與分類選擇 -->
+        <div class="bg-gray-950 text-yellow-500 p-5 rounded-b-3xl shadow-md border-b border-yellow-600/30 z-10">
+            <h1 class="text-2xl font-bold text-center mb-4 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                馬來文情境單字卡
+            </h1>
+            <div class="relative">
+                <select id="category-select" class="w-full bg-gray-800 text-yellow-400 border border-yellow-600/50 rounded-xl px-4 py-3 appearance-none focus:outline-none focus:ring-2 focus:ring-yellow-500 font-medium cursor-pointer">
+                    <!-- 分類選項由 JS 生成 -->
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-yellow-500">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 卡片與進度區域 -->
+        <div class="flex-1 flex flex-col items-center justify-center p-6 relative perspective-1000">
+            
+            <!-- 進度指示器 -->
+            <div class="absolute top-4 w-full flex justify-between items-center px-8 text-sm font-medium text-gray-400">
+                <span id="progress-text">1 / 5</span>
+                <span class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-3 py-1 rounded-full text-xs" id="category-badge">問候</span>
+            </div>
+
+            <!-- 卡片本體 -->
+            <div id="flashcard" class="w-full h-[65%] mt-8 relative transform-style-3d card-inner cursor-pointer" onclick="toggleCard()">
+                
+                <!-- 卡片正面 -->
+                <div class="absolute w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-yellow-600/50 rounded-3xl shadow-[0_0_15px_rgba(202,138,4,0.15)] backface-hidden flex flex-col items-center justify-center p-8 text-center">
+                    <button onclick="playWordAudio(event)" class="mb-4 bg-yellow-500 text-gray-900 p-4 rounded-full hover:bg-yellow-400 transition-colors shadow-lg shadow-yellow-500/30 active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+                    </button>
+                    <h2 id="card-word" class="text-4xl font-bold text-yellow-400 mb-1 tracking-wide">Selamat pagi</h2>
+                    <p id="card-ipa" class="text-yellow-200/60 font-mono text-lg mb-2 font-medium">/səˈlamat ˈpagi/</p>
+                    <p class="text-gray-500 text-sm mt-4 animate-pulse">點擊卡片翻面看解說</p>
+                </div>
+
+                <!-- 卡片背面 (情境記憶) -->
+                <div class="absolute w-full h-full bg-gray-800 border-2 border-yellow-600/50 rounded-3xl shadow-[0_0_15px_rgba(202,138,4,0.15)] backface-hidden rotate-y-180 flex flex-col p-6 overflow-y-auto no-scrollbar">
+                    <div class="text-center mb-4 border-b border-gray-700 pb-4 flex flex-col items-center">
+                        <div id="card-icon" class="text-5xl mb-3 bg-gradient-to-br from-gray-700 to-gray-800 w-20 h-20 rounded-full flex items-center justify-center shadow-inner border border-yellow-600/30">🌅</div>
+                        <h2 id="card-meaning" class="text-3xl font-bold text-yellow-400">早安</h2>
+                    </div>
+                    
+                    <div class="flex-1 flex flex-col gap-4 text-left">
+                        <!-- 情境故事 -->
+                        <div class="bg-gray-900/80 rounded-xl p-4 border border-yellow-600/30 relative">
+                            <div class="absolute -top-3 left-4 bg-gray-800 border border-yellow-600/50 text-yellow-400 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                                情境記憶法
+                            </div>
+                            <p id="card-story" class="text-gray-300 text-sm leading-relaxed mt-2"></p>
+                        </div>
+
+                        <!-- 實用例句 -->
+                        <div class="bg-gray-900/80 rounded-xl p-4 border border-yellow-600/30">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-sm font-bold text-yellow-500">實用例句</h3>
+                                <button onclick="playExampleAudio(event)" class="text-yellow-500 hover:text-yellow-400 p-1 active:scale-95 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </button>
+                            </div>
+                            <p id="card-example" class="text-gray-200 font-medium mb-1"></p>
+                            <p id="card-example-meaning" class="text-gray-400 text-sm"></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 底部控制列 -->
+        <div class="bg-gray-900 px-6 py-4 border-t border-yellow-600/20 rounded-b-3xl">
+            
+            <!-- 語速控制 -->
+            <div class="flex justify-center items-center gap-2 mb-4">
+                <span class="text-xs text-gray-400 font-medium mr-2">發音語速:</span>
+                <div class="bg-gray-800 border border-gray-700 p-1 rounded-lg flex gap-1">
+                    <button class="speed-btn px-3 py-1 text-xs font-bold rounded-md transition-colors text-gray-400" data-speed="0.5">慢 (0.5x)</button>
+                    <button class="speed-btn px-3 py-1 text-xs font-bold rounded-md transition-colors text-gray-400" data-speed="0.75">中 (0.75x)</button>
+                    <button class="speed-btn px-3 py-1 text-xs font-bold rounded-md transition-colors bg-yellow-500 text-gray-900 shadow-sm" data-speed="1">常速 (1x)</button>
+                </div>
+            </div>
+
+            <!-- 導航按鈕 -->
+            <div class="flex justify-between items-center gap-4">
+                <button onclick="prevCard()" class="flex-1 bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-300 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    上一個
+                </button>
+                <button onclick="toggleCard()" class="w-14 h-14 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-gray-900 rounded-full flex items-center justify-center shadow-lg shadow-yellow-900/50 transition-all active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v6h6"/></svg>
+                </button>
+                <button onclick="nextCard()" class="flex-1 bg-yellow-500/10 border border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-400 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors active:scale-95">
+                    下一個
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 邏輯與資料 -->
+    <script>
+        // 馬來文情境單字資料庫 (AI 生成的情境與例句)
+        const flashcardsData = {
+            '問候與禮貌': [
+                {
+                    word: 'Selamat pagi',
+                    ipa: '/səˈlamat ˈpagi/',
+                    meaning: '早安',
+                    emoji: '🌅',
+                    example: 'Selamat pagi, apa khabar?',
+                    exampleMeaning: '早安，你好嗎？',
+                    story: '想像你走進陽光灑落的吉隆坡咖啡廳，店員對你露出燦爛的微笑。你熱情地回應「Selamat pagi」，開啟了美好的一天。「Selamat」有平安、祝福之意，「pagi」是早晨。'
+                },
+                {
+                    word: 'Terima kasih',
+                    ipa: '/təˈrima ˈkasih/',
+                    meaning: '謝謝',
+                    emoji: '🙏',
+                    example: 'Terima kasih atas bantuan anda.',
+                    exampleMeaning: '謝謝你的幫忙。',
+                    story: '在夜市買了一份沙嗲，老闆遞給你熱騰騰的美食。你笑著說出「Terima kasih」。「Terima」意思是接受，「kasih」是愛，字面上的意思是「接受你的愛」，是非常溫暖的感謝語！'
+                },
+                {
+                    word: 'Sama-sama',
+                    ipa: '/ˈsama ˈsama/',
+                    meaning: '不客氣',
+                    emoji: '🤝',
+                    example: 'A: Terima kasih! B: Sama-sama.',
+                    exampleMeaning: 'A: 謝謝！ B: 不客氣。',
+                    story: '當你幫助了當地人，他們向你道謝時，你可以輕鬆地回覆「Sama-sama」。「Sama」是相同的意思，重複兩次表示「我們彼此彼此、不用客氣」。'
+                },
+                {
+                    word: 'Maaf',
+                    ipa: '/maˈaf/',
+                    meaning: '對不起 / 抱歉',
+                    emoji: '🙇',
+                    example: 'Maaf, saya lambat.',
+                    exampleMeaning: '抱歉，我遲到了。',
+                    story: '不小心在擁擠的單軌列車上踩到了別人的腳，你立刻微微低頭說一聲「Maaf」。這是一個非常簡短卻實用的字，發音時嘴巴要微微張開拉長音。'
+                }
+            ],
+            '日常飲食': [
+                {
+                    word: 'Makan',
+                    ipa: '/ˈmakan/',
+                    meaning: '吃',
+                    emoji: '🍽️',
+                    example: 'Saya mahu makan nasi lemak.',
+                    exampleMeaning: '我想吃椰漿飯。',
+                    story: '肚子餓得咕嚕咕嚕叫，走到路邊攤販前，指著熱騰騰的食物說「Makan! Makan!」。馬來西亞是美食天堂，學會這個字，你絕對不會餓肚子！'
+                },
+                {
+                    word: 'Minum',
+                    ipa: '/ˈminum/',
+                    meaning: '喝',
+                    emoji: '🥤',
+                    example: 'Dia minum kopi ais.',
+                    exampleMeaning: '他喝冰咖啡。',
+                    story: '天氣炎熱的午後，你走進茶餐室（Kopitiam），渴望一杯冰涼的飲料。你跟老闆說要「Minum」，老闆馬上懂你需要解渴了。'
+                },
+                {
+                    word: 'Sedap',
+                    ipa: '/səˈdap/',
+                    meaning: '好吃 / 美味',
+                    emoji: '😋',
+                    example: 'Makanan ini sangat sedap!',
+                    exampleMeaning: '這食物非常好吃！',
+                    story: '吃了一口道地的叻沙（Laksa），濃郁的湯頭讓你忍不住豎起大拇指，大喊一聲「Sedap!」。老闆聽到一定會笑得合不攏嘴，可能會多給你幾塊豆腐卜！'
+                },
+                {
+                    word: 'Air',
+                    ipa: '/aˈir/',
+                    meaning: '水',
+                    emoji: '💧',
+                    example: 'Boleh saya minta segelas air?',
+                    exampleMeaning: '可以給我一杯水嗎？',
+                    story: '要注意！馬來文的「Air」發音接近「阿耶」，跟英文的空氣 (air) 完全不同。當你口渴時，記得要的是「Air (阿耶)」，而不是吸一口空氣喔！'
+                }
+            ],
+            '實用數字與購物': [
+                {
+                    word: 'Berapa',
+                    ipa: '/bəˈrapa/',
+                    meaning: '多少',
+                    emoji: '💰',
+                    example: 'Berapa harga ini?',
+                    exampleMeaning: '這個多少錢？',
+                    story: '在中央藝術坊看中了一個精美的木雕，你指著它，好奇地問老闆「Berapa?」。這是購物必備神單字，搭配手勢就能行遍天下！'
+                },
+                {
+                    word: 'Satu',
+                    ipa: '/ˈsatu/',
+                    meaning: '一',
+                    emoji: '☝️',
+                    example: 'Saya nak satu roti canai.',
+                    exampleMeaning: '我要一份印度煎餅。',
+                    story: '點餐時只要舉起一根手指頭，大聲說出「Satu」，老闆馬上幫你準備一份美味的餐點。發音就像「沙度」。'
+                },
+                {
+                    word: 'Mahal',
+                    ipa: '/maˈhal/',
+                    meaning: '昂貴',
+                    emoji: '💸',
+                    example: 'Wah, ini sangat mahal!',
+                    exampleMeaning: '哇，這太貴了！',
+                    story: '當老闆開了一個讓你倒抽一口氣的價格，你皺起眉頭，搖搖頭說「Mahal~ Mahal~」。這時候通常就是準備殺價的開始了！'
+                }
+            ]
+        };
+
+        // 應用狀態
+        let currentCategory = '問候與禮貌';
+        let currentIndex = 0;
+        let isFlipped = false;
+        let currentSpeed = 1.0;
+        let targetVoice = null; // 新增：儲存找到的正確語言聲線
+
+        // DOM 元素
+        const domElements = {
+            categorySelect: document.getElementById('category-select'),
+            progressText: document.getElementById('progress-text'),
+            categoryBadge: document.getElementById('category-badge'),
+            flashcard: document.getElementById('flashcard'),
+            cardWord: document.getElementById('card-word'),
+            cardIpa: document.getElementById('card-ipa'),
+            cardIcon: document.getElementById('card-icon'),
+            cardMeaning: document.getElementById('card-meaning'),
+            cardStory: document.getElementById('card-story'),
+            cardExample: document.getElementById('card-example'),
+            cardExampleMeaning: document.getElementById('card-example-meaning'),
+            speedBtns: document.querySelectorAll('.speed-btn')
+        };
+
+        // 初始化
+        function init() {
+            // 嘗試載入系統可用的語音
+            loadVoices();
+            // 處理某些瀏覽器非同步載入語音包的情況
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+
+            // 填充分類選項
+            Object.keys(flashcardsData).forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                domElements.categorySelect.appendChild(option);
+            });
+
+            // 分類改變事件
+            domElements.categorySelect.addEventListener('change', (e) => {
+                currentCategory = e.target.value;
+                currentIndex = 0;
+                if (isFlipped) toggleCard();
+                else updateUI();
+            });
+
+            // 語速按鈕事件
+            domElements.speedBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // 更新按鈕樣式
+                    domElements.speedBtns.forEach(b => {
+                        b.classList.remove('bg-yellow-500', 'text-gray-900', 'shadow-sm');
+                        b.classList.add('text-gray-400');
+                    });
+                    e.target.classList.remove('text-gray-400');
+                    e.target.classList.add('bg-yellow-500', 'text-gray-900', 'shadow-sm');
+                    
+                    // 更新語速設定
+                    currentSpeed = parseFloat(e.target.dataset.speed);
+                });
+            });
+
+            // 初始渲染
+            updateUI();
+        }
+
+        // 更新介面內容
+        function updateUI() {
+            const list = flashcardsData[currentCategory];
+            const data = list[currentIndex];
+
+            // 更新進度與標籤
+            domElements.progressText.textContent = `${currentIndex + 1} / ${list.length}`;
+            domElements.categoryBadge.textContent = currentCategory;
+
+            // 更新卡片內容
+            domElements.cardWord.textContent = data.word;
+            domElements.cardIpa.textContent = data.ipa;
+            domElements.cardIcon.textContent = data.emoji;
+            domElements.cardMeaning.textContent = data.meaning;
+            domElements.cardStory.textContent = data.story;
+            domElements.cardExample.textContent = data.example;
+            domElements.cardExampleMeaning.textContent = data.exampleMeaning;
+        }
+
+        // 翻轉卡片
+        function toggleCard() {
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                domElements.flashcard.classList.add('is-flipped');
+            } else {
+                domElements.flashcard.classList.remove('is-flipped');
+            }
+        }
+
+        // 上一個單字
+        function prevCard() {
+            if (isFlipped) toggleCard();
+            
+            setTimeout(() => {
+                const list = flashcardsData[currentCategory];
+                currentIndex = (currentIndex - 1 + list.length) % list.length;
+                updateUI();
+            }, isFlipped ? 300 : 0); // 如果正在翻面，等待翻面動畫結束再更新資料
+        }
+
+        // 下一個單字
+        function nextCard() {
+            if (isFlipped) toggleCard();
+            
+            setTimeout(() => {
+                const list = flashcardsData[currentCategory];
+                currentIndex = (currentIndex + 1) % list.length;
+                updateUI();
+            }, isFlipped ? 300 : 0);
+        }
+
+        // 載入並尋找適合的馬來語或印尼語聲線
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            
+            // 1. 優先尋找馬來西亞馬來語 (ms-MY)
+            targetVoice = voices.find(voice => voice.lang.replace('_', '-').toLowerCase() === 'ms-my');
+            
+            // 2. 如果找不到，退而求其次尋找印尼語 (id-ID)。因為印尼語與馬來語發音幾乎相同，且幾乎所有設備都有內建
+            if (!targetVoice) {
+                targetVoice = voices.find(voice => voice.lang.toLowerCase().startsWith('id'));
+            }
+        }
+
+        // 語音合成功能 (Web Speech API)
+        function speak(text) {
+            // 檢查瀏覽器支援
+            if ('speechSynthesis' in window) {
+                // 停止當前可能在播放的語音
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // 如果有成功抓取到目標聲線，強制套用
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
+                }
+                
+                // 備用語言標籤 (優先設為印尼語，因為各平台預設支援度遠大於馬來語)
+                utterance.lang = 'id-ID'; 
+                utterance.rate = currentSpeed; // 設定語速 (0.5, 0.75, 1.0)
+                
+                // 某些瀏覽器需要這行來確保聲音載入
+                utterance.volume = 1;
+                utterance.pitch = 1;
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("您的瀏覽器不支援語音功能。請嘗試使用最新版的 Chrome 或 Safari。");
+            }
+        }
+
+        // 播放單字發音
+        function playWordAudio(event) {
+            event.stopPropagation(); // 阻止卡片翻轉
+            const word = flashcardsData[currentCategory][currentIndex].word;
+            speak(word);
+        }
+
+        // 播放例句發音
+        function playExampleAudio(event) {
+            event.stopPropagation(); // 阻止卡片翻轉
+            const example = flashcardsData[currentCategory][currentIndex].example;
+            speak(example);
+        }
+
+        // 啟動程式
+        window.addEventListener('DOMContentLoaded', init);
+        
+        // 鍵盤左右鍵控制
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextCard();
+            if (e.key === 'ArrowLeft') prevCard();
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                toggleCard();
+            }
+        });
+
+    </script>
+</body>
+</html>
